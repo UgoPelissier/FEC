@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		E459C70228CDE3CD00251B35 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E459C70128CDE3CD00251B35 /* main.cpp */; };
+		E459C70A28CDEB6600251B35 /* Triangulation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E459C70828CDEB6600251B35 /* Triangulation.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +26,8 @@
 /* Begin PBXFileReference section */
 		E459C6FE28CDE3CD00251B35 /* FiniteElement */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = FiniteElement; sourceTree = BUILT_PRODUCTS_DIR; };
 		E459C70128CDE3CD00251B35 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		E459C70828CDEB6600251B35 /* Triangulation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Triangulation.cpp; sourceTree = "<group>"; };
+		E459C70928CDEB6600251B35 /* Triangulation.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Triangulation.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +60,8 @@
 		E459C70028CDE3CD00251B35 /* FiniteElement */ = {
 			isa = PBXGroup;
 			children = (
+				E459C70828CDEB6600251B35 /* Triangulation.cpp */,
+				E459C70928CDEB6600251B35 /* Triangulation.hpp */,
 				E459C70128CDE3CD00251B35 /* main.cpp */,
 			);
 			path = FiniteElement;
@@ -119,6 +124,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E459C70A28CDEB6600251B35 /* Triangulation.cpp in Sources */,
 				E459C70228CDE3CD00251B35 /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
