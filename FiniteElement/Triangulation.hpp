@@ -3,11 +3,14 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <numeric>
 #include <math.h>
 #include <valarray>
+#include <exception>
+
 
 using namespace std;
 
@@ -41,19 +44,43 @@ inline vector<size_t> argsort(vector<double> const& v) {
     return sortIndex;
 }
 
+inline bool in(size_t const& d, vector<size_t> const& list) {
+    for (size_t i(0); i<list.size(); i++) {
+        if (d == list[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+inline double rad2deg(double const& radians) {
+    double degrees = radians*180/M_PI;
+    return degrees;
+}
+
+inline double deg2rad(double const& degrees) {
+    double radians = degrees*M_PI/180;
+    return radians;
+}
+
 /*------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------*/
 class Point
 {
 public:
-    Point(double x, double y);
+    Point();
+    Point(double const& x, double const& y);
+    
     virtual bool isEqual(Point *p2) const;
     virtual double getX() const;
     virtual double getY() const;
-    virtual double distance(Point const& p2) const;
-    virtual bool collinear(Point const& p2, Point const& p3) const;
-    virtual bool isBewteen(Point const& p1, Point const& p2) const;
+    virtual void addX(double d);
+    virtual void addY(double d);
+    virtual double distance(Point *p2) const;
+    virtual bool collinear(Point *p2, Point *p3) const;
+    virtual bool isBewteen(Point *p1, Point *p2) const;
+    
     virtual void affiche() const;
     virtual ~Point();
 
@@ -62,22 +89,45 @@ protected:
     double m_y;
 };
 
+class Circle
+{
+public:
+    Circle();
+    Circle(Point const& center, double const& radius);
+    
+    virtual bool inside(Point *p);
+    
+    virtual Point* getCenter() const;
+    virtual double getRadius() const;
+    
+    virtual void affiche() const;
+    virtual ~Circle();
+    
+protected:
+    Point *m_center;
+    double m_radius;
+    
+};
+
 class listPoints
 {
 public:
     listPoints();
-    listPoints(Point p);
-    listPoints(vector<Point> list);
+    listPoints(Point const& p);
+    listPoints(vector<Point> const& list);
+    listPoints(vector<Point*> list);
     
-    virtual bool inList(Point *p) const;
-    virtual int inListIndex(Point *p) const;
+    virtual int listSize() const;
+    virtual pair<bool,size_t> inList(Point *p) const;
+    virtual void add(Point *p);
     
     virtual vector<double> xList() const;
     virtual vector<double> yList() const;
     virtual Point geometricCenter() const;
     virtual listPoints translatedGeometricCenter() const;
     virtual listPoints sortIncreasingTrigonometricOrder() const;
-    
+
+    virtual vector<Point*> getList() const;
     virtual void affiche() const;
     virtual ~listPoints();
     
@@ -88,8 +138,23 @@ protected:
 class Edge
 {
 public:
-    Edge(Point p1, Point p2);
-    virtual bool isEqual(Edge const& e) const;
+    Edge();
+    Edge(Point const& p1, Point const& p2);
+    Edge(Point *p1, Point *p2);
+    virtual bool isEqual(Edge *e) const;
+    virtual Point midpoint() const;
+    virtual double length() const;
+    
+    virtual pair<bool,size_t> inList(vector<Edge*> list) const;
+    virtual Circle circumcircle() const;
+    
+    virtual pair<size_t,vector<Edge*>> nextEdge(vector<Edge*> list) const;
+    
+    virtual bool belongs(Point *p) const;
+    virtual bool subsegment(Edge *e) const;
+    
+    virtual Point* getP1() const;
+    virtual Point* getP2() const;
     virtual void affiche() const;
     virtual ~Edge();
     
@@ -98,11 +163,67 @@ protected:
     Point *m_p2;
 };
 
+class Line
+{
+public:
+    Line();
+    Line(double a, double b);
+    
+    virtual pair<bool, Point> intersect(Line *l) const;
+    virtual pair<bool, Point> intersection(Edge *e) const;
+    virtual ~Line();
+    
+protected:
+    double m_a;
+    double m_b;
+};
+
+class Polygon
+{
+public:
+    Polygon();
+    Polygon(vector<Edge*> polygon);
+    Polygon(vector<Point*> list);
+    Polygon(listPoints list);
+    Polygon(listPoints *list);
+    
+    virtual listPoints poly2list() const;
+    virtual int rayCastingNumber(Point *p) const;
+    virtual bool belongs(Point *p) const;
+    virtual bool circumTriangle(vector<Point*> triangle) const;
+    virtual bool inside(Point *p) const;
+    virtual vector<Edge*> tooLongEdges(double const& criterion) const;
+    
+    virtual void prepare(double const& criterion);
+    virtual vector<Point> superTriangle() const;
+    
+    virtual bool subsegment(Edge *e) const;
+    
+    virtual vector<Edge*> getPolygon() const;
+    virtual void affiche() const;
+    virtual ~Polygon();
+    
+protected:
+    vector<Edge*> m_polygon;
+};
+
 class Triangle
 {
 public:
     Triangle();
-    Triangle(vector<Point> triangle);
+    Triangle(vector<Point> const& triangle);
+    Triangle(vector<Point*> triangle);
+    
+    virtual pair<bool,Circle> circumcircle() const;
+    virtual pair<Edge*, double> shortestEdge() const;
+    virtual pair<Edge*, double> longestEdge() const;
+    virtual bool commonEdge(Polygon *p) const;
+    
+    virtual double minAngle() const;
+    virtual pair<bool,vector<Edge*>> hasSubsegments(Polygon *geometry) const;
+    virtual bool quality(double const& minAngle) const;
+    
+    virtual vector<Point*> getTriangle() const;
     virtual void affiche() const;
     virtual ~Triangle();
     
@@ -110,25 +231,71 @@ protected:
     vector<Point*> m_triangle;
 };
 
-class Circle
+class Geometries
 {
 public:
-    Circle(Point center, double radius);
-    virtual void affiche() const;
-    virtual ~Circle();
+    Geometries();
+    Geometries(vector<Polygon*> geometries);
+    Geometries(vector<listPoints*> geometries);
+    
+    virtual bool outside(Point *p) const;
+    virtual bool commonEdge(Triangle *t) const;
+    
+    virtual void prepare(double const& criterion);
+    
+    virtual vector<Polygon*> getGeometries() const;
+    virtual ~Geometries();
     
 protected:
-    Point *m_center;
-    double m_radius;
-    
+    vector<Polygon*> m_geometries;
 };
 
 class Triangulation
 {
 public:
     Triangulation();
-    Triangulation(Triangle t);
+    Triangulation(vector<Triangle*> triangulation);
+    Triangulation(Triangle const& t);
+    
+    virtual vector<Triangle*> getTriangulation() const;
+    virtual listPoints pointsList() const;
+    virtual size_t local2global(listPoints const& points, size_t const& triangle, size_t const& sommet) const;
+    virtual vector<vector<size_t>> connectivityTable() const;
+    
+    virtual pair<Edge*, double> shortestEdge() const;
+    virtual pair<Edge*, double> longestEdge() const;
+    virtual vector<Edge*> tooLongEdges(double const& citerion) const;
+    
+    virtual vector<size_t> cavityIndex(Point *p) const;
+    virtual vector<size_t> triangleIndexBelongs(Edge *e) const;
+    virtual pair<Polygon*,vector<size_t>> cavity(Point *p) const;
+    virtual void add(Point *p);
+    
+    virtual void domainSuperTriangulation(Polygon *domain);
+    virtual void removeSuperTriangle(Polygon *domain);
+    virtual void removeOutTriangle(Polygon *domain);
+    
+    virtual vector<Edge*> missingSubsegments(Edge *segment) const;
+    virtual bool inTriangulation(Edge *segment) const;
+    virtual vector<Edge*> missingGeometrySegment(Polygon *geometry) const;
+    virtual void constrainedTriangulation(Polygon *geometry);
+    
+    virtual void domainTriangulation(Polygon *domain);
+    
+    virtual bool encroached(Edge *e) const;
+    virtual vector<Edge*> encroachedSegments(Polygon *geometry) const;
+    virtual pair<bool, Edge*> encroachedUpon(Point *p, Triangle *triangle) const;
+    virtual bool encroachedCorrection(Polygon *geometry);
+    
+    virtual pair<vector<size_t>, size_t> skinnyTriangle(double const& minAngle) const;
+    virtual bool qualityCorrection(double const& minAngle, Geometries *geometries);
+    
+    virtual bool meshSizeCorrection(double const& h);
+    
+    virtual void triangulation(Geometries *geometries, double const& minAngle, double const& h);
+    
     virtual void affiche() const;
+    virtual void saveVTU(string const& path) const;
     virtual ~Triangulation();
     
 protected:
