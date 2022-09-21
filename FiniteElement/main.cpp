@@ -20,11 +20,11 @@ int main()
     Polygon *circle2 = new Polygon(new Circle(Point(0.75,-0.75),0.05), N);
     Polygon *circle3 = new Polygon(new Circle(Point(0.75,0.75),0.05), N);
     Polygon *circle4 = new Polygon(new Circle(Point(-0.75,0.75),0.05), N);
-    
     Geometries *geometries = new Geometries({oven, piece, circle1, circle2, circle3, circle4});
     
+    double minAngle = 20, meshSize = 0.5;
     Triangulation delaunayTriangulation;
-    delaunayTriangulation.triangulation(geometries, 20, 0.5);
+    delaunayTriangulation.triangulation(geometries, minAngle, meshSize);
     
     string const path = "/Users/fp/Desktop/Ugo/Projets/C++/FiniteElement/Mesh/";
     delaunayTriangulation.saveVTU(path);
