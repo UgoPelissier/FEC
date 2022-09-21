@@ -2,9 +2,11 @@
 #define Point_hpp
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <numeric>
 #include <math.h>
@@ -63,6 +65,20 @@ inline double deg2rad(double const& degrees) {
     return radians;
 }
 
+inline vector<pair<double,double>> readGeometry(string const& pathFilename) {
+    ifstream file(pathFilename);
+    string line;
+    double x,y;
+    vector<pair<double,double>> geometry;
+    while (getline(file,line)) {
+        stringstream line_stream(line);
+        if (line_stream >> x >> y) {
+            geometry.push_back(make_pair(x,y));
+        }
+    }
+    return geometry;
+}
+
 /*------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------*/
@@ -71,6 +87,7 @@ class Point
 public:
     Point();
     Point(double const& x, double const& y);
+    Point(pair<double,double> const& point);
     
     virtual bool isEqual(Point *p2) const;
     virtual double getX() const;
@@ -116,6 +133,7 @@ public:
     listPoints(Point const& p);
     listPoints(vector<Point> const& list);
     listPoints(vector<Point*> list);
+    listPoints(vector<pair<double,double>> const& list);
     
     virtual int listSize() const;
     virtual pair<bool,size_t> inList(Point *p) const;
@@ -187,7 +205,7 @@ public:
     Polygon(vector<Point*> list);
     Polygon(listPoints list);
     Polygon(listPoints *list);
-    Polygon (Circle *c, int const& N);
+    Polygon(Circle *c, int const& N);
     
     virtual listPoints poly2list() const;
     virtual int rayCastingNumber(Point *p) const;
@@ -278,6 +296,7 @@ public:
     virtual void domainSuperTriangulation(Polygon *domain);
     virtual void removeSuperTriangle(Polygon *domain);
     virtual void removeOutTriangle(Polygon *domain);
+    virtual void removeInTriangle(Polygon *geometry);
     
     virtual vector<Edge*> missingSubsegments(Edge *segment) const;
     virtual bool inTriangulation(Edge *segment) const;

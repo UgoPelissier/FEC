@@ -13,6 +13,10 @@ Point::Point(double const& x, double const& y)
     :m_x(x), m_y(y)
 {}
 
+Point::Point(pair<double,double> const& point)
+    :m_x(point.first), m_y(point.second)
+{}
+
 bool Point::isEqual(Point *p2) const
 {
     if (abs(m_x - p2->m_x)<1e-10 && abs(m_y - p2->m_y)<1e-10)
@@ -138,6 +142,13 @@ listPoints::listPoints(vector<Point*> list)
 {
     for (size_t i(0); i<list.size(); i++) {
         m_list.push_back(list[i]);
+    }
+}
+
+listPoints::listPoints(vector<pair<double,double>> const& list)
+{
+    for (size_t i(0); i<list.size(); i++) {
+        m_list.push_back(new Point(list[i]));
     }
 }
 
@@ -474,7 +485,7 @@ Polygon::Polygon(listPoints *list)
     }
 }
 
-Polygon::Polygon (Circle *c, int const& N)
+Polygon::Polygon(Circle *c, int const& N)
 {
     double r = c->getRadius();
     Point *center = c->getCenter();
@@ -1099,6 +1110,17 @@ void Triangulation::removeOutTriangle(Polygon *domain)
     m_triangulation = newTriangulation;
 }
 
+void Triangulation::removeInTriangle(Polygon *geometry)
+{
+    vector<Triangle*> newTriangulation;
+    for (size_t i(0); i<m_triangulation.size(); i++) {
+        if (not m_triangulation[i]->inside(geometry)) {
+            newTriangulation.push_back(m_triangulation[i]);
+        }
+    }
+    m_triangulation = newTriangulation;
+}
+
 vector<Edge*> Triangulation::missingSubsegments(Edge *segment) const
 {
     vector<Edge*> missings;
@@ -1358,7 +1380,6 @@ void Triangulation::triangulation(Geometries *geometries, double const& minAngle
         Polygon *geometry = geometries->getGeometries()[i];
         for (size_t j(0); j<geometry->getPolygon().size(); j++) {
             this->add(geometry->getPolygon()[j]->getP1());
-            this->saveVTU("/Users/fp/Desktop/Ugo/Projets/C++/FiniteElement/Mesh/");
         }
     }
     bool state = (this->qualityCorrection(minAngle, geometries) and this->meshSizeCorrection(h));
@@ -1368,6 +1389,10 @@ void Triangulation::triangulation(Geometries *geometries, double const& minAngle
         }
     }
     this->constrainedTriangulation(geometries);
+    for (size_t i(1); i<geometries->getGeometries().size(); i++) {
+        Polygon *geometry = geometries->getGeometries()[i];
+        this->removeInTriangle(geometry);
+    }
 }
 
 void Triangulation::affiche() const
