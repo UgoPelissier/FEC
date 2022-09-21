@@ -86,7 +86,7 @@ Circle::Circle(Point const& center, double const& radius)
 
 bool Circle::inside(Point *p)
 {
-    if (p->distance(m_center)<m_radius) {
+    if (p->distance(m_center)<m_radius+1e-10) {
         return true;
     } else {
         return false;
@@ -434,6 +434,16 @@ Polygon::Polygon(vector<Edge*> polygon)
     :m_polygon(polygon)
 {}
 
+Polygon::Polygon(vector<Point> list)
+{
+    if (not list[0].isEqual(new Point(list[list.size()-1]))) {
+        list.push_back(list[0]);
+    }
+    for (size_t i(0); i<list.size()-1; i++) {
+        m_polygon.push_back(new Edge(list[i], list[i+1]));
+    }
+}
+
 Polygon::Polygon(vector<Point*> list)
 {
     if (not list[0]->isEqual(list[list.size()-1])) {
@@ -464,6 +474,25 @@ Polygon::Polygon(listPoints *list)
     }
 }
 
+Polygon::Polygon (Circle *c, int const& N)
+{
+    double r = c->getRadius();
+    Point *center = c->getCenter();
+    double x,y, theta;
+    Point *p1, *p2;
+    for (size_t i(0); i<(N-1); i++) {
+        theta = (2*M_PI*i)/(N-1);
+        x = r*cos(theta)+center->getX();
+        y = r*sin(theta)+center->getY();
+        p1 = new Point(x,y);
+        theta = (2*M_PI*(i+1))/(N-1);
+        x = r*cos(theta)+center->getX();
+        y = r*sin(theta)+center->getY();
+        p2 = new Point(x,y);
+        m_polygon.push_back(new Edge(p1,p2));
+    }
+}
+
 listPoints Polygon::poly2list() const
 {
     listPoints list;
@@ -480,13 +509,13 @@ int Polygon::rayCastingNumber(Point *p) const
 {
     int left(0), right(0);
     Line l(0,p->getY());
-    Point *previous = new Point(100000,100000);
+    listPoints previous;
     for (size_t i(0); i<m_polygon.size(); i++) {
         bool intersect;
         Point intersectPoint;
         tie(intersect, intersectPoint) = l.intersection(m_polygon[i]);
-        if (intersect and (not intersectPoint.isEqual(previous))) {
-            previous = new Point(intersectPoint);
+        if (intersect and (not previous.inList(new Point(intersectPoint)).first)) {
+            previous.add(new Point(intersectPoint));
             if (intersectPoint.getX()<p->getX()) {
                 left++;
             } else {
@@ -685,6 +714,22 @@ bool Triangle::commonEdge(Polygon *p) const
         if (triangle.getPolygon()[i]->inList(p->getPolygon()).first) {
             return true;
         }
+    }
+    return false;
+}
+
+bool Triangle::inscribed(Polygon *p) const
+{
+    if (p->belongs(m_triangle[0]) and p->belongs(m_triangle[1]) and p->belongs(m_triangle[2])) {
+        return true;
+    }
+    return false;
+}
+
+bool Triangle::inside(Polygon *p) const
+{
+    if (p->inside(m_triangle[0]) and p->inside(m_triangle[1]) and p->inside(m_triangle[2])) {
+        return true;
     }
     return false;
 }
@@ -952,10 +997,12 @@ pair<Polygon*,vector<size_t>> Triangulation::cavity(Point *p) const
             }
         }
     }
+    if (start.empty()) {
+        start.push_back(0);
+    }
     if (cav.empty()) {
         return make_pair(new Polygon(cav), index);
     }
-    this->saveVTU("/Users/fp/Desktop/Ugo/Projets/C++/FiniteElement/Mesh/");
     bool pointInCavity(false);
     vector<size_t> sortedIndex;
     vector<Edge*> convexCavity;
@@ -983,7 +1030,7 @@ pair<Polygon*,vector<size_t>> Triangulation::cavity(Point *p) const
     Polygon *convCav = new Polygon(convexCavity);
     vector<size_t> cavIndex;
     for (size_t i(0); i<index.size(); i++) {
-        if (m_triangulation[index[i]]->commonEdge(convCav)) {
+        if (m_triangulation[index[i]]->commonEdge(convCav) or m_triangulation[index[i]]->inscribed(convCav) or m_triangulation[index[i]]->inside(convCav)) {
             cavIndex.push_back(index[i]);
         }
     }
@@ -1129,24 +1176,28 @@ vector<Edge*> Triangulation::missingGeometrySegment(Polygon *geometry) const
     return missings;
 }
 
-void Triangulation::constrainedTriangulation(Polygon *geometry)
+void Triangulation::constrainedTriangulation(Geometries *geometries)
 {
-    vector<Edge*> missings = this->missingGeometrySegment(geometry);
-    while (not missings.empty()) {
-        for (size_t i(0); i<missings.size(); i++) {
-            Edge *segment = missings[i];
-            vector<Edge*> missingsSubsegments = this->missingSubsegments(segment);
-            while (not missingsSubsegments.empty()) {
-                for (size_t j(0); j<missingsSubsegments.size(); j++) {
-                    Edge *subsegment = missingsSubsegments[j];
-                    Point *p = new Point(subsegment->midpoint());
-                    this->add(p);
+    for (size_t j(0); j<geometries->getGeometries().size(); j++) {
+        Polygon *geometry = geometries->getGeometries()[j];
+        vector<Edge*> missings = this->missingGeometrySegment(geometry);
+        while (not missings.empty()) {
+            for (size_t i(0); i<missings.size(); i++) {
+                Edge *segment = missings[i];
+                vector<Edge*> missingsSubsegments = this->missingSubsegments(segment);
+                while (not missingsSubsegments.empty()) {
+                    for (size_t j(0); j<missingsSubsegments.size(); j++) {
+                        Edge *subsegment = missingsSubsegments[j];
+                        Point *p = new Point(subsegment->midpoint());
+                        this->add(p);
+                    }
+                    missingsSubsegments = this->missingSubsegments(segment);
                 }
-                missingsSubsegments = this->missingSubsegments(segment);
             }
+            missings = this->missingGeometrySegment(geometry);
         }
-        missings = this->missingGeometrySegment(geometry);
     }
+    
 }
 
 void Triangulation::domainTriangulation(Polygon *domain)
@@ -1154,7 +1205,7 @@ void Triangulation::domainTriangulation(Polygon *domain)
     this->domainSuperTriangulation(domain);
     this->removeSuperTriangle(domain);
     this->removeOutTriangle(domain);
-    this->constrainedTriangulation(domain);
+    this->constrainedTriangulation(new Geometries({domain}));
 }
 
 bool Triangulation::encroached(Edge *e) const
@@ -1251,7 +1302,6 @@ bool Triangulation::qualityCorrection(double const& minAngle, Geometries *geomet
         bool encroach;
         Edge *e;
         tie(encroach, e) = this->encroachedUpon(p, triangle);
-        this->saveVTU("/Users/fp/Desktop/Ugo/Projets/C++/FiniteElement/Mesh/");
         if (encroach) {
             this->add(new Point(e->midpoint()));
         }
@@ -1308,15 +1358,16 @@ void Triangulation::triangulation(Geometries *geometries, double const& minAngle
         Polygon *geometry = geometries->getGeometries()[i];
         for (size_t j(0); j<geometry->getPolygon().size(); j++) {
             this->add(geometry->getPolygon()[j]->getP1());
+            this->saveVTU("/Users/fp/Desktop/Ugo/Projets/C++/FiniteElement/Mesh/");
         }
     }
     bool state = (this->qualityCorrection(minAngle, geometries) and this->meshSizeCorrection(h));
     while (not state) {
         for (size_t i(0); i<geometries->getGeometries().size(); i++) {
-            this->constrainedTriangulation(geometries->getGeometries()[i]);
             state = (this->qualityCorrection(minAngle, geometries) and this->meshSizeCorrection(h));
         }
     }
+    this->constrainedTriangulation(geometries);
 }
 
 void Triangulation::affiche() const

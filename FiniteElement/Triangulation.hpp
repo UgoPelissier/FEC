@@ -183,9 +183,11 @@ class Polygon
 public:
     Polygon();
     Polygon(vector<Edge*> polygon);
+    Polygon(vector<Point> list);
     Polygon(vector<Point*> list);
     Polygon(listPoints list);
     Polygon(listPoints *list);
+    Polygon (Circle *c, int const& N);
     
     virtual listPoints poly2list() const;
     virtual int rayCastingNumber(Point *p) const;
@@ -218,6 +220,8 @@ public:
     virtual pair<Edge*, double> shortestEdge() const;
     virtual pair<Edge*, double> longestEdge() const;
     virtual bool commonEdge(Polygon *p) const;
+    virtual bool inscribed(Polygon *p) const;
+    virtual bool inside(Polygon *p) const;
     
     virtual double minAngle() const;
     virtual pair<bool,vector<Edge*>> hasSubsegments(Polygon *geometry) const;
@@ -278,7 +282,7 @@ public:
     virtual vector<Edge*> missingSubsegments(Edge *segment) const;
     virtual bool inTriangulation(Edge *segment) const;
     virtual vector<Edge*> missingGeometrySegment(Polygon *geometry) const;
-    virtual void constrainedTriangulation(Polygon *geometry);
+    virtual void constrainedTriangulation(Geometries *geometries);
     
     virtual void domainTriangulation(Polygon *domain);
     
